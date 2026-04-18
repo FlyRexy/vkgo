@@ -31,12 +31,15 @@ func TestPipeline(t *testing.T) {
 			// если вы накапливаете значения, то пока вся функция не отработает - дальше они не пойдут
 			// тут я проверяю, что счетчик увеличился в следующей функции
 			// это значит что туда дошло значение прежде чем текущая функция отработала
+			fmt.Println("yo, got it")
 			if currRecieved == 0 {
 				ok = false
 			}
 		}),
 		cmd(func(in, out chan interface{}) {
+			fmt.Println("inited")
 			for range in {
+				fmt.Println("endless")
 				atomic.AddUint32(&recieved, 1)
 			}
 		}),
@@ -74,7 +77,6 @@ func TestPipeline2(t *testing.T) {
 		}),
 		cmd(func(in, out chan interface{}) {
 			for val := range in {
-				fmt.Println("collected", val)
 				atomic.AddUint32(&recieved, val.(uint32))
 			}
 		}),
