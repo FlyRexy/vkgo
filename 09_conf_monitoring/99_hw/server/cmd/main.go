@@ -12,18 +12,29 @@ import (
 	threadsvc "server/internal/pkg/thread/service"
 
 	"github.com/labstack/echo"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 )
 
 func main() {
+	logger, err := zap.NewProduction()
+	defer logger.Sync()
+	if err != nil {
+		fmt.Println("zap logger is not available")
+	}
+	sugarLogger := logger.Sugar()
+
 	e := echo.New()
-	sessionSvc := session.NewService()
+	sessionSvc := session.NewService(sugarLogger)
 	e.Use(middleware.AuthEchoMiddleware(sessionSvc))
 
-	threadRepo := threadrepo.NewRepository()
+	e.Use(middleware.ObserveMiddleware(sugarLogger))
+
+	threadRepo := threadrepo.NewRepository(sugarLogger)
 	threadSvc := threadsvc.NewService(threadRepo)
 	threadHandler := threadhttp.Handler{ThreadSvc: threadSvc}
 
-	commentRepo := commentrepo.NewRepository()
+	commentRepo := commentrepo.NewRepository(sugarLogger)
 	commentSvc := commentsvc.NewService(commentRepo, threadRepo)
 	commentHandler := handler.Handler{CommentSvc: commentSvc}
 
@@ -31,6 +42,11 @@ func main() {
 	e.POST("/thread", threadHandler.CreateThread)
 	e.POST("/thread/:tid/comment", commentHandler.Create)
 	e.POST("/thread/:tid/comment/:cid/like", commentHandler.Like)
+	e.GET("/metrics", func(ctx echo.Context) error {
+		sugarLogger.Info("collecting metrics")
+		promhttp.Handler().ServeHTTP(ctx.Response().Writer, ctx.Request())
+		return nil
+	})
 
-	fmt.Print(e.Start(":8000"))
+	fmt.Print(e.Start(":8080"))
 }

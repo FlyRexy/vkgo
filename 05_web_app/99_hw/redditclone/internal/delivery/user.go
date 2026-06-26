@@ -2,70 +2,70 @@ package delivery
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"gitlab.vk-golang.com/vk-golang/lectures/05_web_app/99_hw/redditclone/internal/repository"
+	"gitlab.vk-golang.com/vk-golang/lectures/05_web_app/99_hw/redditclone/internal/di"
+	"gitlab.vk-golang.com/vk-golang/lectures/05_web_app/99_hw/redditclone/internal/lib"
+	"gitlab.vk-golang.com/vk-golang/lectures/05_web_app/99_hw/redditclone/internal/service"
 	"go.uber.org/zap"
 )
 
 type UserHandler struct {
-	repo   *repository.Repository
-	logger *zap.SugaredLogger
+	authService di.AuthService
+	logger      *zap.SugaredLogger
 }
 
-func NewUserHandler(repo *repository.Repository, logger *zap.SugaredLogger) *UserHandler {
+func NewUserHandler(authService di.AuthService, logger *zap.SugaredLogger) *UserHandler {
 	return &UserHandler{
-		repo,
+		authService,
 		logger,
 	}
 }
 
-func (uh *UserHandler) SetupRoutes(r *mux.Router) *mux.Router {
-	r.HandleFunc("/api/login", uh.Login)
-	r.HandleFunc("/api/register", uh.Signup).Methods(http.MethodPost)
+func (uh *UserHandler) SetupRoutes(pub, pr *mux.Router) (*mux.Router, *mux.Router) {
+	pub.HandleFunc("/login", uh.Login)
+	pub.HandleFunc("/register", uh.Signup).Methods(http.MethodPost)
 
-	return r
+	return pub, pr
 }
 
 func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
-	user := new(repository.User)
-	err = json.Unmarshal(body, user)
-	userFromRepo, err := uh.repo.UserRepo.CheckUserExist(user.Username, user.Password)
-	uh.logger.Infoln(uh.repo.UserRepo)
-	if err != nil {
-		resp, _ := json.Marshal(map[string]string{"error": err.Error()})
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(resp)
+	var req UserDTO
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		lib.WriteError(w, err)
 		return
 	}
 
-	token := uh.repo.SessionRepo.CreateSession(userFromRepo)
+	_, token, err := uh.authService.Login(r.Context(), service.UserDTO{
+		Username: req.Username,
+		Password: req.Password,
+	})
+	if err != nil {
+		lib.WriteError(w, err)
+		return
+	}
 
-	success, _ := json.Marshal(map[string]string{"token": token})
+	success, _ := json.Marshal(map[string]string{"token": string(token)})
 	w.Write(success)
 }
 
 func (uh *UserHandler) Signup(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
-	user := new(repository.User)
-	err = json.Unmarshal(body, user)
-
-	userFromRepo, err := uh.repo.UserRepo.CreateUser(user.Username, user.Password)
-	uh.logger.Infoln(userFromRepo)
-	if err != nil {
-		resp, _ := json.Marshal(map[string]string{"error": err.Error()})
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(resp)
+	var req UserDTO
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		lib.WriteError(w, err)
 		return
 	}
 
-	token := uh.repo.SessionRepo.CreateSession(userFromRepo)
+	_, token, err := uh.authService.Signup(r.Context(), service.UserDTO{
+		Username: req.Username,
+		Password: req.Password,
+	})
+	if err != nil {
+		lib.WriteError(w, err)
+		return
+	}
 
-	success, _ := json.Marshal(map[string]string{"token": token})
+	success, _ := json.Marshal(map[string]string{"token": string(token)})
 	w.Write(success)
 }

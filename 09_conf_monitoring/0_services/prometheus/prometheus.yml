@@ -6,6 +6,9 @@ scrape_configs:
   - job_name: 'golang'
     static_configs:
       - targets: ['docker.for.mac.localhost:8080']
+    http_headers:
+      Cookie:
+        values: ['user=user_1']
 
   - job_name: 'system'
     static_configs:
@@ -19,4 +22,4 @@ alerting:
     - static_configs:
       - targets:
         - alertmanager:9093
-
+  

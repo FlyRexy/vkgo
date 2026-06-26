@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"gitlab.vk-golang.com/vk-golang/lectures/05_web_app/99_hw/redditclone/internal/delivery"
+	"gitlab.vk-golang.com/vk-golang/lectures/05_web_app/99_hw/redditclone/internal/di"
 	"gitlab.vk-golang.com/vk-golang/lectures/05_web_app/99_hw/redditclone/internal/repository"
 	"go.uber.org/zap"
 )
@@ -24,7 +25,6 @@ const (
 	addr = ":8080"
 )
 
-
 func main() {
 	r := mux.NewRouter()
 	zapLogger, _ := zap.NewProduction()
@@ -32,7 +32,8 @@ func main() {
 	defer zapLogger.Sync()
 
 	repo := repository.NewRepository()
-	r.PathPrefix("/api/").Handler(delivery.SetupAPI(repo, sugared))
+	sInj := di.NewServiceInjector(repo)
+	r.PathPrefix("/api/").Handler(delivery.SetupAPI(sInj, sugared))
 
 	r.PathPrefix("/static/").HandlerFunc(ServeStatic)
 	r.PathPrefix("/").HandlerFunc(ServeMain)

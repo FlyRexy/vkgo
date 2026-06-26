@@ -1,75 +1,91 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
+
+	"gitlab.vk-golang.com/vk-golang/lectures/05_web_app/99_hw/redditclone/internal/domain"
 )
 
-type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	ID       int64  `json:"-"`
+type UserEntity struct {
+	Username string
+	Password string
+	ID       int64
 }
 
 type UserRepo struct {
-	data   []User
-	mu     *sync.RWMutex
+	AnyRepo[[]UserEntity]
 	nextID int64
 }
 
 func NewUserRepository() *UserRepo {
 	return &UserRepo{
-		data:   make([]User, 0),
-		mu:     &sync.RWMutex{},
+		AnyRepo: AnyRepo[[]UserEntity]{
+			data: make([]UserEntity, 0),
+			mu:   &sync.RWMutex{},
+		},
 		nextID: 1,
 	}
 }
 
-func (repo *UserRepo) CheckUserExist(username, password string) (User, error) {
-	var checkedUser User
-	for _, user := range repo.data {
-		if user.Username == username {
-			checkedUser = user
+func (repo *UserRepo) Login(ctx context.Context, user domain.User) (domain.User, error) {
+	var checkedUser domain.User
+	for _, currentUser := range repo.data {
+		if currentUser.Username == user.Username {
+			checkedUser = domain.User{
+				ID:       currentUser.ID,
+				Username: currentUser.Username,
+				Password: currentUser.Password,
+			}
 			break
 		}
 	}
 
 	if checkedUser.Username == "" {
-		return User{}, errors.New("such user doesn't exist")
+		return domain.User{}, errors.New("such user doesn't exist")
 	}
 
-	if checkedUser.Password != password {
-		return User{}, errors.New("password doesn't match")
+	if checkedUser.Password != user.Password {
+		return domain.User{}, errors.New("password doesn't match")
 	}
 
 	return checkedUser, nil
 }
 
-func (repo *UserRepo) CreateUser(username, password string) (User, error) {
-	var checkedUser User
+func (repo *UserRepo) Signup(ctx context.Context, user domain.User) (domain.User, error) {
+	var checkedUser domain.User
 	repo.mu.RLock()
-	for _, user := range repo.data {
-		if user.Username == username {
-			checkedUser = user
+	for _, currentUser := range repo.data {
+		if user.Username == currentUser.Username {
+			checkedUser = domain.User{
+				ID:       currentUser.ID,
+				Username: currentUser.Username,
+				Password: currentUser.Password,
+			}
 			break
 		}
 	}
 	repo.mu.RUnlock()
 
 	if checkedUser.Username != "" {
-		return User{}, fmt.Errorf("user with username %s already exist", username)
+		return domain.User{}, fmt.Errorf("user with username %s already exist", checkedUser.Username)
 	}
 
 	repo.mu.Lock()
-	newUser := User{
-		Username: username,
-		Password: password,
+	newUser := UserEntity{
+		Username: user.Username,
+		Password: user.Password,
 		ID:       repo.nextID,
 	}
 	repo.nextID++
 	repo.data = append(repo.data, newUser)
 	repo.mu.Unlock()
 
-	return newUser, nil
+	return domain.User{
+		ID:       newUser.ID,
+		Username: newUser.Username,
+		Password: newUser.Password,
+	}, nil
 }

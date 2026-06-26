@@ -1,0 +1,33 @@
+# Taskfile.yml
+version: '3'
+
+vars:
+  DB_URL: postgres://myuser:mypass@localhost:5432/sreddit?sslmode=disable
+
+tasks:
+  dev:
+    deps: [migrate-up]
+    cmds:
+      - go run ./cmd/redditclone/main.go
+
+  migrate-up:
+    cmds:
+      - migrate -path db/migrations -database "{{.DB_URL}}" up
+
+  migrate-down:
+    cmds:
+      - migrate -path db/migrations -database "{{.DB_URL}}" down 1
+
+  migrate-create:
+    cmds:
+      - migrate create -ext sql -dir db/migrations -seq {{.name}}
+
+  full:
+    deps: [db-up]
+    cmds:
+      - task: migrate-up
+      - task: dev
+
+  db-up:
+    cmds:
+      - docker compose -f db/docker-compose.yml up -d

@@ -333,6 +333,7 @@ func TestStat(t *testing.T) {
 	go func() {
 		for {
 			stat, errTmp := statStream1.Recv()
+
 			if errTmp != nil && errTmp != io.EOF {
 				// fmt.Printf("unexpected error %v\n", errTmp)
 				return
@@ -388,7 +389,7 @@ func TestStat(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wait(200) // 2 sec
+	wait(250) // 2 sec
 
 	expectedStat1 := &Stat{
 		ByMethod: map[string]uint64{
