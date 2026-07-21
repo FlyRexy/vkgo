@@ -1,6 +1,6 @@
 module gitlab.vk-golang.com/vk-golang/lectures
 
-go 1.25.0
+go 1.26.4
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d

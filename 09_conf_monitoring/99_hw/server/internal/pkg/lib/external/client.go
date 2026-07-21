@@ -32,7 +32,7 @@ func (ot *observedTransport) RoundTrip(req *http.Request) (*http.Response, error
 	}
 
 	prometheus.ExternalRequestHits.WithLabelValues(req.URL.Path, status, ot.service).Inc()
-	prometheus.ExternalRequestDuration.WithLabelValues(req.URL.Path, ot.service).Observe(time.Since(start).Seconds())
+	prometheus.ExternalRequestDuration.WithLabelValues(req.URL.Path, ot.service, status).Observe(time.Since(start).Seconds())
 
 	return res, err
 }

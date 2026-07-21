@@ -7,9 +7,25 @@ import (
 )
 
 func LogExternalRequest(logger *zap.SugaredLogger, req *http.Request, resp *http.Response) {
-	if resp.StatusCode == http.StatusOK {
-		logger.Info(zap.String("host", req.Host), zap.String("path", req.URL.Path), zap.Int("status", resp.StatusCode))
+	var statusCode int
+	if resp == nil {
+		statusCode = 500
 	} else {
-		logger.Error(zap.String("host", req.Host), zap.String("path", req.URL.Path), zap.Int("status", resp.StatusCode))
+		statusCode = resp.StatusCode
+	}
+	if statusCode == http.StatusOK {
+		logger.Infow(
+			"external request finished",
+			"host", req.Host,
+			"path", req.URL.Path,
+			"status", resp.StatusCode,
+		)
+	} else {
+		logger.Errorw(
+			"external request finished",
+			"host", req.Host,
+			"path", req.URL.Path,
+			"status", resp.StatusCode,
+		)
 	}
 }

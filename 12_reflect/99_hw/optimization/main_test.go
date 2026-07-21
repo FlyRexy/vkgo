@@ -27,6 +27,7 @@ func TestSearch(t *testing.T) {
 
 	if slowResult != fastResult {
 		t.Errorf("results not match\nGot:\n%v\nExpected:\n%v", fastResult, slowResult)
+		t.Errorf("Got: %#v, Want: %#v", fastResult, slowResult)
 	}
 }
 

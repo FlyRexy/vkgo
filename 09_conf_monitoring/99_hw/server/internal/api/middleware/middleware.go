@@ -32,7 +32,8 @@ var (
 		[]string{"path", "status"},
 	)
 	requestDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "http_request_duration_seconds",
+		Name:    "http_request_duration_seconds",
+		Buckets: []float64{0.005, 0.01, 0.02, 0.4, 1, 2, 5, 10},
 	}, []string{"path"})
 )
 
@@ -55,12 +56,14 @@ func ObserveMiddleware(logger *zap.SugaredLogger) echo.MiddlewareFunc {
 					zap.Error(err),
 				)
 			} else {
-				logger.Info(
-					zap.String("requestID", reqID),
-					zap.String("path", context.Path()),
-					zap.Int("status", context.Response().Status),
-					zap.String("tenant", context.Request().RemoteAddr),
-					zap.Int64("duration", time.Since(start).Milliseconds()),
+				logger.Infow(
+					"http request finished",
+					"request_id", reqID,
+					"method", context.Request().Method,
+					"path", context.Path(),
+					"status", context.Response().Status,
+					"duration_ms", time.Since(start).Milliseconds(),
+					"remote_addr", context.Request().RemoteAddr,
 				)
 			}
 

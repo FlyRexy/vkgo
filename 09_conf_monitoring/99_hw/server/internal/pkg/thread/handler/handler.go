@@ -31,6 +31,7 @@ func (h Handler) CreateThread(ctx echo.Context) error {
 
 	err = h.ThreadSvc.Create(thread)
 	if err != nil {
+		ctx.NoContent(500)
 		return err
 	}
 

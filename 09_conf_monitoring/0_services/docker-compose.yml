@@ -1,3 +1,6 @@
+volumes:
+  grafana-data:
+
 services:
   consul:
     image: hashicorp/consul
@@ -46,6 +49,8 @@ services:
       - "16686:16686"
   grafana:
     image: grafana/grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
     links:
       - prometheus:prometheus # datasource = http://prometheus:9090
       - statsd:statsd # datasource = http://statsd:81

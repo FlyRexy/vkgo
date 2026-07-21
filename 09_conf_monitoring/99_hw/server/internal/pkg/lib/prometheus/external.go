@@ -15,8 +15,9 @@ var (
 		prometheus.HistogramOpts{
 			Name: "external_request_duration_seconds",
 		},
-		[]string{"path", "service"},
+		[]string{"path", "service", "status"},
 	)
+	
 )
 
 func init() {
